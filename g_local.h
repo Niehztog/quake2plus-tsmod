@@ -807,6 +807,7 @@ extern cvar_t *sv_trap_held_radius;
 typedef enum
 {
         FILE_MAP,
+	FILE_OVERRIDE,
         FILE_MODEL,
         FILE_SOUND,
         FILE_TEXTURE

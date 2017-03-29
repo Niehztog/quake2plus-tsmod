@@ -666,7 +666,9 @@ qboolean FileExists(char *checkname, filetype_t ftype)
                 case FILE_MAP:
                         sprintf(path, "maps/%s.bsp", checkname);
                         break;
-
+		case FILE_OVERRIDE:
+			sprintf(path, "maps/%s.bsp.override", checkname);
+                        break;
                 case FILE_MODEL:
                         sprintf(path, "models/%s.md2", checkname);
                         break;

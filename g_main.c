@@ -518,7 +518,7 @@ void EndDMLevel(void)
 //CW++
 //              Check that the bsp exists. If not, then reload the current level.
 //
-//              if (!FileExists(level.forcemap, FILE_MAP))
+//              if (!FileExists(level.forcemap, FILE_MAP) && !FileExists(level.forcemap, FILE_OVERRIDE))
 //              {
 //                      gi_bprintf(PRINT_CHAT, "** Cannot open bsp: \"%s\"\n   (Restarting current level).\n\n", level.$
 //                      BeginIntermission(CreateTargetChangeLevel(level.mapname));
@@ -545,14 +545,14 @@ void EndDMLevel(void)
         	//gi.dprintf("File closed\n");
 //              Check that the bsp exists. If not, then reload the current level.
 
-                if (!FileExists(bspname, FILE_MAP))
+                if (!FileExists(bspname, FILE_MAP) && !FileExists(bspname, FILE_OVERRIDE))
                 {
-                        //gi_bprintf(PRINT_CHAT, "** Cannot open bsp: \"%s\"\n   (Restarting current level).\n\n", bspn$
+                        gi.dprintf("** Cannot open bsp: \"%s\"\n(Restarting current level).\n", bspname);
                         BeginIntermission(CreateTargetChangeLevel(level.mapname));
                         return;
                 }
 
-		//gi.bprintf (PRINT_CHAT, "Next Map: %s\n", bspname);
+		gi.dprintf("Next Map: %s\n", bspname);
 
                 BeginIntermission(CreateTargetChangeLevel(bspname));
                 return;
