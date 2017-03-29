@@ -1425,6 +1425,10 @@ void PutClientInServer (edict_t *ent)
 	// force the current weapon up
 	client->newweapon = client->pers.weapon;
 	ChangeWeapon (ent);
+	
+	// Knightmare- added Paril's fix for this getting reset after map changes
+	if (!ent->client->pers.connected)
+		ent->client->pers.connected = true;
 }
 
 /*
