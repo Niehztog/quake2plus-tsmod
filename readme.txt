@@ -147,6 +147,24 @@ the worse pad to use for respawn.  Totally invisible in the game, and works 100%
 DMFLAG 'spawn furthest' needs to be set for this to be used.  Add 512 to your existing DMFLAG
 value to apply.
 
+
+Tastyspleen additions - killable (and configurable) traps
+=========================================================
+The whole time a trap is in flight, it is running 100% through the standard code paths. Once
+the trap has landed and settled and opens does the killable traps code take effect and allow
+the trap to take damage. So the trap physics for throwing/bouncing should retain 100% of its
+classic behavior.
+
+The following new server variables have been added to configure behaviour of traps:
+
+sv_trap_duration (default: 30)
+sv_trap_health (default: 200)
+sv_trap_expl_damage (default: 200)
+sv_trap_expl_radius (default: 300)
+sv_trap_held_damage (default: 125)
+sv_trap_held_radius (default: 165)
+
+
 End Xatrix only stuff.
 ======================
 
