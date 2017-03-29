@@ -618,6 +618,10 @@ typedef struct
 #define RF_USE_DISGUISE		0x00040000
 //ROGUE
 
+// %%quadz
+#define RF_SHELL_MASK		(RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_DOUBLE|RF_SHELL_HALF_DAM)
+
+
 // player_state_t->refdef flags
 #define	RDF_UNDERWATER		1		// warp the screen as apropriate
 #define RDF_NOWORLDMODEL	2		// used for player configuration screen
@@ -1220,3 +1224,6 @@ do { \
         (dst)[(len)] = 0; \
 } while (0)
 
+// %%quadz - added missing prototypes:
+extern int Q_strcmpz (char *s1, char *s2);
+extern int Q_strncmpz (char *s1, char *s2, int count);

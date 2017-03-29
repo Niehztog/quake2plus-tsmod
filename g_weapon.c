@@ -1289,6 +1289,8 @@ static void Trap_Explode (edict_t *ent)
 	int		mod;
 	//int		n;	
 
+	ent->owner = ent->obitowner;  // %%quadz
+
 	if (ent->owner->client)
 		PlayerNoise(ent->owner, ent->s.origin, PNOISE_IMPACT);
 
@@ -1344,6 +1346,7 @@ static void Trap_Explode (edict_t *ent)
 
 // RAFAEL
 extern void SP_item_foodcube (edict_t *best);
+static void convert_trap_to_killable (edict_t *ent);
 // RAFAEL
 static void Trap_Think (edict_t *ent)
 {
@@ -1353,12 +1356,29 @@ static void Trap_Think (edict_t *ent)
 	int		len, i;
 	int		oldlen = 8000;
 	vec3_t	forward, right, up;
-	
-	if (ent->timestamp < level.time)
+	int	was_quadded = trap_is_quadded(ent);  // %%quadz -- add quad trap suction!! O RLY??? YA RLY!!
+	int was_killed = trap_has_become_killable(ent) && (ent->health <= 0);  // %%quadz - killable traps
+
+	if (! killable_traps_enabled())
+		was_killed = 0;
+
+	if (ent->shell_expire_timestamp < level.time) {
+		ent->s.effects &= ~EF_COLOR_SHELL;
+		ent->s.renderfx &= ~RF_SHELL_MASK;
+	}
+
+	if ((ent->timestamp < level.time) || was_killed)  // %%quadz - killable traps
 	{
+		// %%quadz - if trap killed rather than expired, give damage
+		if (was_killed) {
+			T_RadiusDamage(ent, ent->obitowner, ent->dmg, NULL, ent->dmg_radius, MOD_EXPLOSIVE);
+//			gi.sound(ent, CHAN_BODY, gi.soundindex("bosstank/btkdeth1.wav"), 1, ATTN_NORM, 0);
+//			gi.sound(ent, CHAN_BODY, gi.soundindex("hover/hovdeth1.wav"), 1, ATTN_NORM, 0);
+//			gi.sound(ent, CHAN_BODY, gi.soundindex("tank/pain.wav"), 1, ATTN_NORM, 0);
+			gi.sound(ent, CHAN_BODY, gi.soundindex("flyer/flydeth1.wav"), 1, ATTN_NORM, 0);
+			gi.sound(ent, CHAN_VOICE, gi.soundindex("world/fuseout.wav"), 1, ATTN_NORM, 0);
+		}
 		BecomeExplosion1(ent);
-		// note to self
-		// cause explosion damage???
 		return;
 	}
 	
@@ -1469,9 +1489,15 @@ static void Trap_Think (edict_t *ent)
 	if (ent->s.frame >= 4)
 	{
 		ent->s.effects |= EF_TRAP;
-		VectorClear (ent->mins);
-		VectorClear (ent->maxs);
 
+		// %%quadz - killable traps {
+		// VectorClear (ent->mins);
+		// VectorClear (ent->maxs);
+
+		if (killable_traps_enabled()  &&  !trap_has_become_killable(ent)) {
+			convert_trap_to_killable(ent);
+		}
+		// %%quadz - }
 	}
 
 	if (ent->s.frame < 4)
@@ -1508,18 +1534,30 @@ static void Trap_Think (edict_t *ent)
 	if (best)
 	{
 		vec3_t	forward;
+		vec3_t	trap_origin;
+
+		// %%quadz - kludge: now that traps have a bbox, so we can
+		// shoot them, if the player is standing on the trap, we fudge
+		// the trap origin upward for the vector length computation,
+		// so it's effectively as it used to be when the player stood
+		// right on the trap.
+		VectorCopy(ent->s.origin, trap_origin);
+		if (best->s.origin[2] > trap_origin[2]) {
+			trap_origin[2] += TRAP_HEIGHT;
+		}
 
 		if (best->groundentity)
 		{
 			best->s.origin[2] += 1;
 			best->groundentity = NULL;
 		}
-		VectorSubtract (ent->s.origin, best->s.origin, vec);
+		VectorSubtract (trap_origin, best->s.origin, vec);
 		len = VectorLength (vec);
 		if (best->client)
 		{
+			int scalar = was_quadded? 1000 : 250;  // %%quadz -- add quad trap suction!
 			VectorNormalize (vec);
-			VectorMA (best->velocity, 250, vec, best->velocity);
+			VectorMA (best->velocity, scalar, vec, best->velocity);
 		}
 		else
 		{
@@ -1532,18 +1570,18 @@ static void Trap_Think (edict_t *ent)
 		// Nick - Add defines
 		//gi.sound(ent, CHAN_VOICE, gi.soundindex ("weapons/trapsuck.wav"), 1, ATTN_IDLE, 0);
 		gi.sound(ent, CHAN_VOICE, gi.soundindex (TRAPSUCK_SOUND), 1, ATTN_IDLE, 0);
-		
+
 		if (len < 32)
 		{	
 			// Nick
 			// Mass doesn't increase in DED
 			//if (best->mass < 400)
 			//{
-				T_Damage (best, ent, ent->owner, vec3_origin, best->s.origin, vec3_origin, 100000, 1, 0, MOD_TRAP);
+				T_Damage (best, ent, ent->obitowner, vec3_origin, best->s.origin, vec3_origin, 100000, 1, 0, MOD_TRAP);
 				ent->enemy = best;
 				ent->wait = 64;
 				VectorCopy (ent->s.origin, ent->s.old_origin);
-				ent->timestamp = level.time + 30;
+				ent->timestamp = level.time + TRAP_DURATION;
 				// Nick - always is on a DED server
 				//if (deathmatch->value)
 				ent->mass = best->mass/4;
@@ -1568,7 +1606,56 @@ static void Trap_Think (edict_t *ent)
 }
 
 
-// RAFAEL
+static void trap_pain (edict_t *self, edict_t *other, float kick, int damage)
+{
+	char *snd;
+
+//	gi.bprintf(PRINT_HIGH, "trap_pain: dmg=%d health=%d\n", damage, self->health);
+
+	self->s.effects |= EF_COLOR_SHELL;
+	self->s.renderfx &= ~RF_SHELL_MASK;
+	if (self->health >= ((TRAP_INITIAL_HEALTH * 2) / 3))
+		self->s.renderfx |= (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE);
+	else if (self->health >= (TRAP_INITIAL_HEALTH / 3))
+		// self->s.renderfx |= (RF_SHELL_HALF_DAM|RF_SHELL_RED|RF_SHELL_GREEN);
+		self->s.renderfx |= (/*RF_SHELL_HALF_DAM|*/RF_SHELL_DOUBLE|RF_SHELL_RED);
+	else if (self->health >= (TRAP_INITIAL_HEALTH / 10))
+		self->s.renderfx |= (RF_SHELL_HALF_DAM|RF_SHELL_RED);
+	else
+		self->s.renderfx |= RF_SHELL_RED;
+	self->shell_expire_timestamp = level.time + 0.5;
+
+	// snd = "world/spark1.wav";
+	// snd = ((rand() % 1000) >= 500) ? "misc/welder2.wav" : "misc/welder3.wav";
+	// snd = ((rand() % 1000) >= 500) ? "world/airhiss2.wav" : "world/force3.wav";
+
+	if (self->health >= (TRAP_INITIAL_HEALTH / 10))
+		snd = ((rand() % 1000) >= 500) ? "world/airhiss2.wav" : "weapons/railgr1a.wav";
+	else
+		snd = "tank/pain.wav";
+	gi.sound(self, CHAN_BODY, gi.soundindex(snd), 1, ATTN_NORM, 0);
+}
+
+static void trap_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
+{
+//	gi.bprintf(PRINT_HIGH, "trap_die: dmg=%d health=%d\n", damage, self->health);
+//	gi.sound(self, CHAN_BODY, gi.soundindex("world/lid.wav"), 1, ATTN_NORM, 0);
+}
+
+
+static void convert_trap_to_killable (edict_t *trap)
+{
+	trap->takedamage = DAMAGE_YES;
+	trap->health = TRAP_INITIAL_HEALTH;
+	trap->pain = trap_pain;
+	trap->die = trap_die;
+	// real owner is kept in obitowner, and so we can
+	// now disassociate the owner so that the owner
+	// can shoot its own traps
+	trap->owner = trap;
+}
+
+
 void fire_trap (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed, float timer, float damage_radius, qboolean held)
 {
 	edict_t	*trap;
@@ -1593,11 +1680,13 @@ void fire_trap (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int spee
 //	VectorClear (trap->mins);
 //	VectorClear (trap->maxs);
 	VectorSet (trap->mins, -4, -4, 0);
-	VectorSet (trap->maxs, 4, 4, 8);
+	VectorSet (trap->maxs, 4, 4, TRAP_HEIGHT);
 	// Nick - add define
 	//trap->s.modelindex = gi.modelindex ("models/weapons/z_trap/tris.md2");
 	trap->s.modelindex = gi.modelindex (TRAP_MODEL);
-	trap->owner = self;
+	trap->takedamage = DAMAGE_NO;
+	trap->owner = self;  // trap;  // was: self
+	trap->obitowner = self;  // keep track of owner separately so owner can shoot own trap
 	trap->nextthink = level.time + 1.0;
 	trap->think = Trap_Think;
 	trap->dmg = damage;
@@ -1613,14 +1702,107 @@ void fire_trap (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int spee
 	else
 		trap->spawnflags = 1;
 	
-	if ((held) && timer <= 0.0) // If player just died (< 0 health) throw trap not explode it.
+	if ((held) && timer <= 0.0) { // If player just died (< 0 health) throw trap not explode it.
+		int was_quadded = trap_is_quadded(trap);
+		trap->dmg = TRAP_HELD_DAMAGE;
+		trap->dmg_radius = TRAP_HELD_RADIUS;
+		if (was_quadded)
+			trap->dmg *= 4;
 		Trap_Explode (trap);
+	}
 	else
 	{
 		// gi.sound (self, CHAN_WEAPON, gi.soundindex ("weapons/trapdown.wav"), 1, ATTN_NORM, 0);
 		gi.linkentity (trap);
 	}
 	
-	trap->timestamp = level.time + 30;
-
+	trap->timestamp = level.time + TRAP_DURATION;
+	trap->shell_expire_timestamp = 0;
 }
+
+
+
+
+
+#if 0
+void fire_trap (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed, float timer, float damage_radius, qboolean held)
+{
+	edict_t	*trap;
+	vec3_t	dir;
+	vec3_t	forward, right, up;
+
+	vectoangles (aimdir, dir);
+	AngleVectors (dir, forward, right, up);
+
+	//if ((held) || (speed > 850)) // Nick - for some reason trap held 'speed' goes up to 8000 odd :-/
+	//	speed = 75;
+
+	trap = G_Spawn();
+	VectorCopy (start, trap->s.origin);
+	VectorScale (aimdir, speed, trap->velocity);
+	VectorMA (trap->velocity, 200 + crandom() * 10.0, up, trap->velocity);
+	VectorMA (trap->velocity, crandom() * 10.0, right, trap->velocity);
+	VectorSet (trap->avelocity, 0, 300, 0);
+	trap->movetype = MOVETYPE_BOUNCE;
+	trap->solid = SOLID_BBOX;
+
+	// %%quadz - killable traps {
+//	trap->svflags |= SVF_MONSTER;
+	trap->clipmask = MASK_SHOT;  // tried: MASK_MONSTERSOLID
+	trap->deadflag = DEAD_NO;
+//	trap->svflags &= ~SVF_DEADMONSTER;
+	if (killable_traps_enabled()) {
+		trap->takedamage = DAMAGE_YES;
+		trap->health = TRAP_INITIAL_HEALTH;
+		trap->pain = trap_pain;
+		trap->die = trap_die;
+	}
+	else {
+		trap->takedamage = DAMAGE_NO;
+	}
+	trap->owner = trap;  // was: self
+	trap->obitowner = self;  // keep track of owner separately so owner can shoot own trap
+//	VectorClear (trap->mins);
+//	VectorClear (trap->maxs);
+	VectorSet(trap->mins, -8, -8, 0);  // was: (trap->mins, -4, -4, 0)
+	VectorSet(trap->maxs, 8, 8, TRAP_HEIGHT);  // was: (trap->maxs, 4, 4, 8)
+	// %%quadz - }
+
+	// Nick - add define
+	//trap->s.modelindex = gi.modelindex ("models/weapons/z_trap/tris.md2");
+	trap->s.modelindex = gi.modelindex (TRAP_MODEL);
+	trap->nextthink = level.time + 1.0;
+	trap->think = Trap_Think;
+	trap->dmg = damage;
+	trap->dmg_radius = damage_radius;
+	trap->classname = "htrap";
+	// RAFAEL 16-APR-98
+	// Nick - Add define
+	//trap->s.sound = gi.soundindex ("weapons/traploop.wav");
+	trap->s.sound = gi.soundindex (TRAPLOOP_SOUND);
+	// END 16-APR-98
+
+	if (held)
+		trap->spawnflags = 3;
+	else
+		trap->spawnflags = 1;
+
+	if ((held) && timer <= 0.0) { // If player just died (< 0 health) throw trap not explode it.
+		int was_quadded = trap_is_quadded(trap);
+		trap->dmg = TRAP_HELD_DAMAGE;
+		trap->dmg_radius = TRAP_HELD_RADIUS;
+		if (was_quadded)
+			trap->dmg *= 4;
+		Trap_Explode (trap);
+	}
+	else
+	{
+		// gi.sound (self, CHAN_WEAPON, gi.soundindex ("weapons/trapdown.wav"), 1, ATTN_NORM, 0);
+		gi.linkentity (trap);
+	}
+
+	trap->timestamp = level.time + TRAP_DURATION;
+	trap->shell_expire_timestamp = 0;
+}
+#endif // 0
+

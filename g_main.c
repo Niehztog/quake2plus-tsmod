@@ -73,6 +73,15 @@ cvar_t  *sv_map_random;
 // Nick - 17/09/2005
 cvar_t *show_deaths;
 
+// %%quadz - killable traps
+cvar_t *sv_trap_health;
+cvar_t *sv_trap_duration;
+cvar_t *sv_trap_expl_damage;
+cvar_t *sv_trap_expl_radius;
+cvar_t *sv_trap_held_damage;
+cvar_t *sv_trap_held_radius;
+
+
 void SpawnEntities (char *mapname, char *entities, char *spawnpoint);
 void ClientThink (edict_t *ent, usercmd_t *cmd);
 qboolean ClientConnect (edict_t *ent, char *userinfo);

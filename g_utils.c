@@ -538,7 +538,10 @@ qboolean KillBox (edict_t *ent)
 
 	while (1)
 	{
-		tr = gi.trace (ent->s.origin, ent->mins, ent->maxs, ent->s.origin, NULL, MASK_PLAYERSOLID);
+		// OLD: tr = gi.trace (ent->s.origin, ent->mins, ent->maxs, ent->s.origin, NULL, MASK_PLAYERSOLID);
+
+		// %%quadz - SIAMESE SPAWN FIX: band-aid for maps without spawn pads
+		tr = gi.trace (ent->s.origin, ent->mins, ent->maxs, ent->s.origin, NULL, CONTENTS_PLAYERCLIP|CONTENTS_WINDOW|CONTENTS_MONSTER);
 		if (!tr.ent)
 			break;
 

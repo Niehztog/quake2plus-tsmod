@@ -19,7 +19,7 @@ ARCH=i386
 #CC=icc
 # GCC default
 CC=gcc
-BASE_CFLAGS=-Dstricmp=strcasecmp -I.
+BASE_CFLAGS=-m32 -Dstricmp=strcasecmp -I.
 
 # This is my build_release flags for ICC with a PentuimPro CPU on the server build.
 # Refer here for further information:
@@ -40,7 +40,7 @@ BASE_CFLAGS=-Dstricmp=strcasecmp -I.
 #CFLAGS_RELEASE=$(BASE_CFLAGS) -O2 -funroll-loops -ffast-math -march=athlon-xp -mmmx -m3dnow -msse
 
 # *** This default generic build line will work well on all ****
-CFLAGS_RELEASE=$(BASE_CFLAGS) -Os -march=i386 -funroll-loops -ffast-math
+CFLAGS_RELEASE=$(BASE_CFLAGS) -O2 -march=i386 -funroll-loops -ffast-math
 
 # 'make build_debug' flags.
 CFLAGS_DEBUG=$(BASE_CFLAGS) -g

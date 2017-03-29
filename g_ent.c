@@ -36,9 +36,7 @@ char *ReadEntFile(char *filename)
  char *LoadEntFile(char *mapname, char *entities) 
  { 
     char   entfilename[MAX_QPATH] = ""; 
-    char   *newentities; 
-    int      i; 
-     
+    char   *newentities;      
 
 	// Nick - move location of entfile directory.
 	// Depends on game being built

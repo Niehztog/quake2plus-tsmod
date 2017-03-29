@@ -668,9 +668,9 @@ extern	spawn_temp_t	st;
 extern	int	sm_meat_index;
 extern	int	snd_fry;
 
-extern	int	jacket_armor_index;
-extern	int	combat_armor_index;
-extern	int	body_armor_index;
+// extern	int	jacket_armor_index;
+// extern	int	combat_armor_index;
+// extern	int	body_armor_index;
 
 
 // means of death
@@ -793,6 +793,15 @@ extern  cvar_t  *sv_map_file;
 extern level_locals_t g_oldmaps[MAX_OLDMAPS];
 // Nick - 17/09/2005
 extern cvar_t *show_deaths;
+
+// %%quadz - killable traps, if health > 0
+extern cvar_t *sv_trap_health;
+extern cvar_t *sv_trap_duration;
+extern cvar_t *sv_trap_expl_damage;
+extern cvar_t *sv_trap_expl_radius;
+extern cvar_t *sv_trap_held_damage;
+extern cvar_t *sv_trap_held_radius;
+
 
 // Filetype info.
 typedef enum
@@ -1341,6 +1350,22 @@ struct edict_s
 
 	// RAFAEL
 	int			orders;
-	edict_t      *obitowner; // Nick - new ripper
-	int		deadtime; // Nick - head roll stuff
+	edict_t		*obitowner; // Nick - new ripper
+	int			deadtime; // Nick - head roll stuff
+	float		shell_expire_timestamp;  // %%quadz - when temporary color shell expires (currently relates to traps only)
+
 };
+
+
+// %%quadz - fun with traps:
+
+#define TRAP_HEIGHT					8
+#define TRAP_BASE_DAMAGE			(sv_trap_expl_damage->value)		// default value of trap explode damage
+#define TRAP_BASE_RADIUS			(sv_trap_expl_radius->value)		// default radius of trap explode damage
+#define TRAP_HELD_DAMAGE			(sv_trap_held_damage->value)
+#define TRAP_HELD_RADIUS			(sv_trap_held_radius->value)
+#define TRAP_DURATION				(sv_trap_duration->value)
+#define TRAP_INITIAL_HEALTH			(sv_trap_health->value)
+#define trap_is_quadded(ent)		((ent)->dmg >= (TRAP_BASE_DAMAGE * 4))
+#define killable_traps_enabled()	(sv_trap_health->value > 0)
+#define trap_has_become_killable(ent)	((ent)->takedamage == DAMAGE_YES)

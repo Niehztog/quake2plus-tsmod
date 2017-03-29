@@ -200,6 +200,14 @@ void InitGame (void)
 	// Nick - 17/09/2005
 	show_deaths = gi.cvar  ("show_deaths", "0", 0);
 
+	// %%quadz - killable traps, if health > 0
+	sv_trap_health = gi.cvar("sv_trap_health", "0", 0);
+	sv_trap_duration = gi.cvar("sv_trap_duration", "30", 0);
+	sv_trap_expl_damage = gi.cvar("sv_trap_expl_damage", "200", 0);
+	sv_trap_expl_radius = gi.cvar("sv_trap_expl_radius", "300", 0);
+	sv_trap_held_damage = gi.cvar("sv_trap_held_damage", "125", 0);
+	sv_trap_held_radius = gi.cvar("sv_trap_held_radius", "165", 0);
+
 	// Nick - 28/12/2005 - force deathmatch->value 1 if not set...
 	if (deathmatch->value != 1) 
 		gi.cvar_forceset("deathmatch", "1");

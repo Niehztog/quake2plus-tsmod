@@ -1468,7 +1468,7 @@ always owned, never in the world
 		WEAP_CHAINGUN,
 		NULL,
 		0,
-/* precache */ "weapons/chngnu1a.wav weapons/chngnl1a.wav weapons/machgf3b.wav` weapons/chngnd1a.wav"
+/* precache */ "weapons/chngnu1a.wav weapons/chngnl1a.wav weapons/machgf3b.wav weapons/chngnd1a.wav"
 	},
 
 /*QUAKED ammo_grenades (.3 .3 1) (-16 -16 -16) (16 16 16)
@@ -1514,8 +1514,7 @@ always owned, never in the world
 		WEAP_TRAP,
 		NULL,
 		AMMO_TRAP,
-/* precache */ "weapons/trapcock.wav weapons/traploop.wav weapons/trapsuck.wav weapons/trapdown.wav"
-// "weapons/hgrent1a.wav weapons/hgrena1b.wav weapons/hgrenc1b.wav weapons/hgrenb1a.wav weapons/hgrenb2a.wav "
+/* precache */ "weapons/trapcock.wav weapons/traploop.wav weapons/trapsuck.wav weapons/trapdown.wav world/airhiss2.wav weapons/railgr1a.wav flyer/flydeth1.wav world/fuseout.wav tank/pain.wav"
 	},
 
 	

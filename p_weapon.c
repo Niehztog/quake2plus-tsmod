@@ -260,7 +260,7 @@ void NoAmmoWeaponChange (edict_t *ent)
 	if ( ent->client->pers.inventory[ITEM_INDEX (FindItem ("cells"))]
 		&& ent->client->pers.inventory[ITEM_INDEX (FindItem ("ionripper"))])
 	{
-		ent->client->newweapon = FindItem ("ionrippergun");	
+		ent->client->newweapon = FindItem ("ionripper");  // %%quadz 070620 - fixed typo
 		return; //Nick - 02/11/2005 - Missing?
 	}
 	
@@ -1793,19 +1793,18 @@ TRAP
 
 #define TRAP_TIMER			5.0
 #define TRAP_MINSPEED		300
-#define TRAP_MAXSPEED		700
+#define TRAP_MAXSPEED		1400	// %%quadz: was: 700
 
 void weapon_trap_fire (edict_t *ent, qboolean held)
 {
 	vec3_t	offset;
 	vec3_t	forward, right;
 	vec3_t	start;
-	int		damage = 125;
+	int		damage = TRAP_BASE_DAMAGE;
 	float	timer;
 	int		speed;
-	float	radius;
+	float	radius = TRAP_BASE_RADIUS;
 
-	radius = damage+40;
 	if (is_quad)
 		damage *= 4;
 
